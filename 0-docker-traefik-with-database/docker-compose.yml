@@ -1,4 +1,12 @@
 services:
+  init-permissions:
+    image: alpine:latest
+    volumes:
+      - "./logs:/storage/logs"
+      - "./app-storage:/storage/app"
+    command: sh -c "chmod -R 777 /storage/logs /storage/app && echo 'Permissions fixed!'"
+    networks:
+      - internal
   app:
     restart: always
     image: "solidtime/solidtime:${SOLIDTIME_IMAGE_TAG:-latest}"
@@ -31,6 +39,7 @@ services:
       - laravel.env
     depends_on:
       - database
+      - init-permissions
   scheduler:
     restart: always
     image: "solidtime/solidtime:${SOLIDTIME_IMAGE_TAG:-latest}"
@@ -49,6 +58,7 @@ services:
       - laravel.env
     depends_on:
       - database
+      - init-permissions
   queue:
     restart: always
     image: "solidtime/solidtime:${SOLIDTIME_IMAGE_TAG:-latest}"
@@ -68,6 +78,7 @@ services:
       - laravel.env
     depends_on:
       - database
+      - init-permissions
   database:
     restart: always
     image: 'postgres:15'
@@ -97,6 +108,8 @@ services:
     image: gotenberg/gotenberg:8
     networks:
       - internal
+    depends_on:
+      - init-permissions
     healthcheck:
       test: [ "CMD", "curl", "--silent", "--fail", "http://localhost:3000/health" ]
 networks:
