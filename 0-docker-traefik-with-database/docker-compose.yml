@@ -127,11 +127,12 @@ services:
 #      - '${FORWARD_DB_PORT:-5432}:5432'
     environment:
       PGPASSWORD: '${DB_PASSWORD:-secret}'
-      POSTGRES_DB: '${DB_DATABASE}'
-      POSTGRES_USER: '${DB_USERNAME}'
+      POSTGRES_DB: '${DB_DATABASE:-solidtime}'
+      POSTGRES_USER: 'postgres'
       POSTGRES_PASSWORD: '${DB_PASSWORD:-secret}'
     volumes:
       - 'database-storage:/var/lib/postgresql/data'
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - internal
     healthcheck:
@@ -140,9 +141,9 @@ services:
         - pg_isready
         - '-q'
         - '-d'
-        - '${DB_DATABASE}'
+        - '${DB_DATABASE:-solidtime}'
         - '-U'
-        - '${DB_USERNAME}'
+        - 'postgres'
       retries: 3
       timeout: 5s
   gotenberg:
