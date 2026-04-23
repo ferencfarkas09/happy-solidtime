@@ -59,13 +59,34 @@ services:
           fi
           sleep 2
         done
-        echo "📦 Running migrations..."
+
+        # Detect whether this is a fresh database (no migrations table yet).
+        # Laravel creates a "migrations" table on first `migrate`; we use its
+        # presence to decide whether db:seed should run. On redeploys with an
+        # existing volume, seeds are skipped so we don't duplicate data.
+        IS_FRESH=$$(php -r "
+          try {
+            \$pdo = new PDO('pgsql:host=database;port=5432;dbname='.getenv('DB_DATABASE'), getenv('DB_USERNAME'), getenv('DB_PASSWORD'));
+            \$stmt = \$pdo->query(\"SELECT to_regclass('public.migrations')\");
+            \$row = \$stmt->fetch();
+            echo (\$row[0] === null) ? 'yes' : 'no';
+          } catch (Throwable \$e) { echo 'yes'; }
+        ")
+        echo "🔎 Fresh database: $$IS_FRESH"
+
+        echo "📦 Running migrations (idempotent)..."
         php /var/www/html/artisan migrate --force --no-interaction
-        echo "🌱 Seeding database (idempotent)..."
-        php /var/www/html/artisan db:seed --force --no-interaction || true
-        echo "🔑 Ensuring personal-access Passport client exists..."
-        php /var/www/html/artisan passport:client --personal --no-interaction --name="solidtime" || true
-        echo "✨ Migrate + seed complete."
+
+        if [ "$$IS_FRESH" = "yes" ]; then
+          echo "🌱 First-time setup — seeding database..."
+          php /var/www/html/artisan db:seed --force --no-interaction || true
+          echo "🔑 Creating personal-access Passport client..."
+          php /var/www/html/artisan passport:client --personal --no-interaction --name="solidtime" || true
+        else
+          echo "♻️  Existing database detected — skipping seeds (data preserved)."
+        fi
+
+        echo "✨ Migrate step complete."
     depends_on:
       database:
         condition: service_healthy
@@ -218,5 +239,9 @@ networks:
 
 volumes:
   database-storage:
+    name: solidtime_database_storage
   app-storage:
+    name: solidtime_app_storage
+
+
 
