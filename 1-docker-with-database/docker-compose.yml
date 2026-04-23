@@ -1,32 +1,32 @@
 services:
   init-permissions:
     image: alpine:latest
+    restart: "no"
     volumes:
-      - "./logs:/storage/logs"
-      - "./app-storage:/storage/app"
-    command: sh -c "chmod -R 777 /storage/logs /storage/app && echo 'Permissions fixed!'"
+      - "app-storage:/var/www/html/storage"
+    command: sh -c "mkdir -p /var/www/html/storage/logs /var/www/html/storage/app && chown -R 1000:1000 /var/www/html/storage && chmod -R ug+rwX /var/www/html/storage"
     networks:
       - internal
+
   app:
     restart: always
     image: "solidtime/solidtime:${SOLIDTIME_IMAGE_TAG:-latest}"
+    user: "1000:1000"
+    # Port 8001 on your host maps to port 8000 inside the container
     ports:
-      - '${FORWARD_APP_PORT:-8000}:8000'
+      - "8001:8000"
     networks:
       - internal
     volumes:
       - "app-storage:/var/www/html/storage"
-      - "./logs:/var/www/html/storage/logs"
-      - "./app-storage:/var/www/html/storage/app"
     environment:
       CONTAINER_MODE: http
     healthcheck:
       test: [ "CMD", "curl", "--fail", "http://localhost:8000/health-check/up" ]
-    env_file:
-      - laravel.env
     depends_on:
       - database
       - init-permissions
+
   scheduler:
     restart: always
     image: "solidtime/solidtime:${SOLIDTIME_IMAGE_TAG:-latest}"
@@ -35,17 +35,14 @@ services:
       - internal
     volumes:
       - "app-storage:/var/www/html/storage"
-      - "./logs:/var/www/html/storage/logs"
-      - "./app-storage:/var/www/html/storage/app"
     environment:
       CONTAINER_MODE: scheduler
     healthcheck:
       test: [ "CMD", "healthcheck" ]
-    env_file:
-      - laravel.env
     depends_on:
       - database
       - init-permissions
+
   queue:
     restart: always
     image: "solidtime/solidtime:${SOLIDTIME_IMAGE_TAG:-latest}"
@@ -54,23 +51,18 @@ services:
       - internal
     volumes:
       - "app-storage:/var/www/html/storage"
-      - "./logs:/var/www/html/storage/logs"
-      - "./app-storage:/var/www/html/storage/app"
     environment:
       CONTAINER_MODE: worker
       WORKER_COMMAND: "php /var/www/html/artisan queue:work"
     healthcheck:
       test: [ "CMD", "healthcheck" ]
-    env_file:
-      - laravel.env
     depends_on:
       - database
       - init-permissions
+
   database:
     restart: always
     image: 'postgres:15'
-#    ports:
-#      - '${FORWARD_DB_PORT:-5432}:5432'
     environment:
       PGPASSWORD: '${DB_PASSWORD:-secret}'
       POSTGRES_DB: '${DB_DATABASE}'
@@ -91,6 +83,7 @@ services:
         - '${DB_USERNAME}'
       retries: 3
       timeout: 5s
+
   gotenberg:
     image: gotenberg/gotenberg:8
     networks:
@@ -99,8 +92,10 @@ services:
       - init-permissions
     healthcheck:
       test: [ "CMD", "curl", "--silent", "--fail", "http://localhost:3000/health" ]
+
 networks:
   internal:
+
 volumes:
   database-storage:
   app-storage:
