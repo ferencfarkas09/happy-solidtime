@@ -4,49 +4,125 @@ services:
     restart: "no"
     volumes:
       - "app-storage:/var/www/html/storage"
-    command: sh -c "mkdir -p /var/www/html/storage/logs /var/www/html/storage/app && chown -R 1000:1000 /var/www/html/storage && chmod -R ug+rwX /var/www/html/storage"
+    command: >
+      sh -c "mkdir -p /var/www/html/storage/logs /var/www/html/storage/app &&
+             chown -R 1000:1000 /var/www/html/storage &&
+             chmod -R ug+rwX /var/www/html/storage"
     networks:
       - internal
+
+  # One-shot migration + seeding. Runs to completion then exits.
+  # app/scheduler/queue wait for this service to finish successfully.
+  migrate:
+    image: "solidtime/solidtime:${SOLIDTIME_IMAGE_TAG:-latest}"
+    restart: "no"
+    user: "1000:1000"
+    networks:
+      - internal
+    volumes:
+      - "app-storage:/var/www/html/storage"
+    environment:
+      APP_NAME: "solidtime"
+      APP_ENV: "production"
+      APP_DEBUG: "false"
+      APP_URL: "${APP_URL:-http://localhost:8001}"
+      APP_FORCE_HTTPS: "false"
+      TRUSTED_PROXIES: "0.0.0.0/0,2000:0:0:0:0:0:0:0/3"
+
+      APP_KEY: "base64:o6wtyPLg2Nsv3be4R6NsMDASiCEyJFCNmRNusX37IeM="
+      PASSPORT_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\n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\nq0QeZK5fXSX4KJT+oGVV6nsTF/dyhw==\n-----END PRIVATE KEY-----\n"
+      PASSPORT_PUBLIC_KEY: "-----BEGIN PUBLIC KEY-----\nMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAwwDmHOocLh8y49kE1j8E\nh7FYHgyRtlbwff187bOpVRAkiV83x4kz1Wn5WzKRWOVYpjjx4i7W3hmKJdY7RvQ8\nZ3zCInbJ1QVGK3RXJ69qjqekM8vi2R55LqrmJPBXNHAk05ttOYDsR4f3n/cl1YKy\nPHnsxjVLe77c9fwuef9urO39ZRX8JpAxw5vsINzGtJd3632Mzw71qWuq/SjwD6YB\nYMrLOWqU12YKb+/O8ubDJZTK9fgib2vEC90RifzGplNPK4RfpxmQaq3gZql6G0C6\nJKebtc6UpOr7m8jj/KVFpp+iACZpwaWUsMG+nsrXe1UUW+Z58GPEhtVPpsrQYxLA\nuUGjeXwwQsW2NxJDzVriYN6soDLTxDMG/saWd1Zr8mOfMPsLxyiWpmUjGNyEm66V\nj8YceHqiF+dGXxSbvEgjM/wmgUvUrwSR4xJxQJIrHgViMc1REEqun3UiKvO3gV6b\nqVFgu5os54o9QmcV71xtfuz/9TguyLU/wUXTigElk5Alp62FzTCeFxKv51gHz9aJ\n5wmKNZ5krWTa9ZEDVPGwhzwkbvIfQ4Wjm3sVPyg65Rx70TTuRJSyQ/Af7axRql+y\nxo5L/rB97ZUayajvR0Sjp48yiChXKwnS5VCVYLNWyspdtY19BB/2Dp2F+ng+Xj/0\nxtqajqV45IevkrHwWiDmS8kCAwEAAQ==\n-----END PUBLIC KEY-----\n"
+      SUPER_ADMINS: "${SUPER_ADMINS:-}"
+
+      LOG_CHANNEL: "stderr_daily"
+      LOG_LEVEL: "info"
+
+      DB_CONNECTION: "pgsql"
+      DB_HOST: "database"
+      DB_PORT: "5432"
+      DB_SSLMODE: "disable"
+      DB_DATABASE: "${DB_DATABASE:-solidtime}"
+      DB_USERNAME: "${DB_USERNAME:-solidtime}"
+      DB_PASSWORD: "${DB_PASSWORD:-KcgplezS5MkmU/sugg7gMg==}"
+
+      QUEUE_CONNECTION: "database"
+      FILESYSTEM_DISK: "local"
+      PUBLIC_FILESYSTEM_DISK: "public"
+    entrypoint: ["/bin/sh", "-lc"]
+    command:
+      - |
+        set -e
+        echo "⏳ Waiting for database..."
+        for i in $$(seq 1 60); do
+          if php -r "try { new PDO('pgsql:host=database;port=5432;dbname='.getenv('DB_DATABASE'), getenv('DB_USERNAME'), getenv('DB_PASSWORD')); } catch (Throwable \$e) { exit(1); }" >/dev/null 2>&1; then
+            echo "✅ Database reachable"; break
+          fi
+          sleep 2
+        done
+        echo "📦 Running migrations..."
+        php /var/www/html/artisan migrate --force --no-interaction
+        echo "🌱 Seeding database (idempotent)..."
+        php /var/www/html/artisan db:seed --force --no-interaction || true
+        echo "🔑 Ensuring personal-access Passport client exists..."
+        php /var/www/html/artisan passport:client --personal --no-interaction --name="solidtime" || true
+        echo "✨ Migrate + seed complete."
+    depends_on:
+      database:
+        condition: service_healthy
+      init-permissions:
+        condition: service_completed_successfully
 
   app:
     restart: always
     image: "solidtime/solidtime:${SOLIDTIME_IMAGE_TAG:-latest}"
     user: "1000:1000"
-    # Port 8001 on your host maps to port 8000 inside the container
     ports:
-      - "8001:8000"
+      - "${FORWARD_APP_PORT:-8001}:8000"
     networks:
       - internal
     volumes:
       - "app-storage:/var/www/html/storage"
     environment:
       CONTAINER_MODE: http
-      APP_ENV: ${APP_ENV:-production}
-      APP_DEBUG: ${APP_DEBUG:-false}
-      APP_KEY: ${APP_KEY:-}
-      APP_URL: ${APP_URL:-http://localhost:8001}
-      DB_CONNECTION: ${DB_CONNECTION:-pgsql}
-      DB_HOST: ${DB_HOST:-database}
-      DB_PORT: ${DB_PORT:-5432}
-      DB_DATABASE: ${DB_DATABASE:-solidtime}
-      DB_USERNAME: ${DB_USERNAME:-solidtime}
-      DB_PASSWORD: ${DB_PASSWORD:-secret}
-      DB_SSLMODE: ${DB_SSLMODE:-disable}
-      QUEUE_CONNECTION: ${QUEUE_CONNECTION:-database}
-      LOG_CHANNEL: ${LOG_CHANNEL:-stderr_daily}
-      FILESYSTEM_DISK: ${FILESYSTEM_DISK:-local}
-      PUBLIC_FILESYSTEM_DISK: ${PUBLIC_FILESYSTEM_DISK:-public}
-      GOTENBERG_URL: ${GOTENBERG_URL:-http://gotenberg:3000}
-    env_file:
-      - laravel.env
+      APP_NAME: "solidtime"
+      APP_ENV: "production"
+      APP_DEBUG: "false"
+      APP_URL: "${APP_URL:-http://localhost:8001}"
+      APP_FORCE_HTTPS: "false"
+      TRUSTED_PROXIES: "0.0.0.0/0,2000:0:0:0:0:0:0:0/3"
+
+      APP_KEY: "base64:o6wtyPLg2Nsv3be4R6NsMDASiCEyJFCNmRNusX37IeM="
+      PASSPORT_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\n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\nq0QeZK5fXSX4KJT+oGVV6nsTF/dyhw==\n-----END PRIVATE KEY-----\n"
+      PASSPORT_PUBLIC_KEY: "-----BEGIN PUBLIC KEY-----\nMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAwwDmHOocLh8y49kE1j8E\nh7FYHgyRtlbwff187bOpVRAkiV83x4kz1Wn5WzKRWOVYpjjx4i7W3hmKJdY7RvQ8\nZ3zCInbJ1QVGK3RXJ69qjqekM8vi2R55LqrmJPBXNHAk05ttOYDsR4f3n/cl1YKy\nPHnsxjVLe77c9fwuef9urO39ZRX8JpAxw5vsINzGtJd3632Mzw71qWuq/SjwD6YB\nYMrLOWqU12YKb+/O8ubDJZTK9fgib2vEC90RifzGplNPK4RfpxmQaq3gZql6G0C6\nJKebtc6UpOr7m8jj/KVFpp+iACZpwaWUsMG+nsrXe1UUW+Z58GPEhtVPpsrQYxLA\nuUGjeXwwQsW2NxJDzVriYN6soDLTxDMG/saWd1Zr8mOfMPsLxyiWpmUjGNyEm66V\nj8YceHqiF+dGXxSbvEgjM/wmgUvUrwSR4xJxQJIrHgViMc1REEqun3UiKvO3gV6b\nqVFgu5os54o9QmcV71xtfuz/9TguyLU/wUXTigElk5Alp62FzTCeFxKv51gHz9aJ\n5wmKNZ5krWTa9ZEDVPGwhzwkbvIfQ4Wjm3sVPyg65Rx70TTuRJSyQ/Af7axRql+y\nxo5L/rB97ZUayajvR0Sjp48yiChXKwnS5VCVYLNWyspdtY19BB/2Dp2F+ng+Xj/0\nxtqajqV45IevkrHwWiDmS8kCAwEAAQ==\n-----END PUBLIC KEY-----\n"
+      SUPER_ADMINS: "${SUPER_ADMINS:-}"
+
+      LOG_CHANNEL: "stderr_daily"
+      LOG_LEVEL: "info"
+
+      DB_CONNECTION: "pgsql"
+      DB_HOST: "database"
+      DB_PORT: "5432"
+      DB_SSLMODE: "disable"
+      DB_DATABASE: "${DB_DATABASE:-solidtime}"
+      DB_USERNAME: "${DB_USERNAME:-solidtime}"
+      DB_PASSWORD: "${DB_PASSWORD:-KcgplezS5MkmU/sugg7gMg==}"
+
+      QUEUE_CONNECTION: "database"
+      FILESYSTEM_DISK: "local"
+      PUBLIC_FILESYSTEM_DISK: "public"
+      GOTENBERG_URL: "http://gotenberg:3000"
     healthcheck:
-      test: [ "CMD", "curl", "--fail", "http://localhost:8000/health-check/up" ]
+      test: ["CMD", "curl", "--fail", "http://localhost:8000/health-check/up"]
       interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 5
     depends_on:
-      - database
-      - init-permissions
+      database:
+        condition: service_healthy
+      init-permissions:
+        condition: service_completed_successfully
+      migrate:
+        condition: service_completed_successfully
 
   scheduler:
     restart: always
@@ -58,26 +134,26 @@ services:
       - "app-storage:/var/www/html/storage"
     environment:
       CONTAINER_MODE: scheduler
-      APP_ENV: ${APP_ENV:-production}
-      APP_DEBUG: ${APP_DEBUG:-false}
-      APP_KEY: ${APP_KEY:-}
-      DB_CONNECTION: ${DB_CONNECTION:-pgsql}
-      DB_HOST: ${DB_HOST:-database}
-      DB_PORT: ${DB_PORT:-5432}
-      DB_DATABASE: ${DB_DATABASE:-solidtime}
-      DB_USERNAME: ${DB_USERNAME:-solidtime}
-      DB_PASSWORD: ${DB_PASSWORD:-secret}
-      DB_SSLMODE: ${DB_SSLMODE:-disable}
-    env_file:
-      - laravel.env
+      APP_ENV: "production"
+      APP_DEBUG: "false"
+      APP_KEY: "base64:o6wtyPLg2Nsv3be4R6NsMDASiCEyJFCNmRNusX37IeM="
+      DB_CONNECTION: "pgsql"
+      DB_HOST: "database"
+      DB_PORT: "5432"
+      DB_SSLMODE: "disable"
+      DB_DATABASE: "${DB_DATABASE:-solidtime}"
+      DB_USERNAME: "${DB_USERNAME:-solidtime}"
+      DB_PASSWORD: "${DB_PASSWORD:-KcgplezS5MkmU/sugg7gMg==}"
+      QUEUE_CONNECTION: "database"
+      LOG_CHANNEL: "stderr_daily"
     healthcheck:
-      test: [ "CMD", "healthcheck" ]
+      test: ["CMD", "healthcheck"]
       interval: 10s
       timeout: 5s
       retries: 3
     depends_on:
-      - database
-      - init-permissions
+      migrate:
+        condition: service_completed_successfully
 
   queue:
     restart: always
@@ -90,60 +166,52 @@ services:
     environment:
       CONTAINER_MODE: worker
       WORKER_COMMAND: "php /var/www/html/artisan queue:work"
-      APP_ENV: ${APP_ENV:-production}
-      APP_DEBUG: ${APP_DEBUG:-false}
-      APP_KEY: ${APP_KEY:-}
-      DB_CONNECTION: ${DB_CONNECTION:-pgsql}
-      DB_HOST: ${DB_HOST:-database}
-      DB_PORT: ${DB_PORT:-5432}
-      DB_DATABASE: ${DB_DATABASE:-solidtime}
-      DB_USERNAME: ${DB_USERNAME:-solidtime}
-      DB_PASSWORD: ${DB_PASSWORD:-secret}
-      DB_SSLMODE: ${DB_SSLMODE:-disable}
-    env_file:
-      - laravel.env
+      APP_ENV: "production"
+      APP_DEBUG: "false"
+      APP_KEY: "base64:o6wtyPLg2Nsv3be4R6NsMDASiCEyJFCNmRNusX37IeM="
+      DB_CONNECTION: "pgsql"
+      DB_HOST: "database"
+      DB_PORT: "5432"
+      DB_SSLMODE: "disable"
+      DB_DATABASE: "${DB_DATABASE:-solidtime}"
+      DB_USERNAME: "${DB_USERNAME:-solidtime}"
+      DB_PASSWORD: "${DB_PASSWORD:-KcgplezS5MkmU/sugg7gMg==}"
+      QUEUE_CONNECTION: "database"
+      LOG_CHANNEL: "stderr_daily"
     healthcheck:
-      test: [ "CMD", "healthcheck" ]
+      test: ["CMD", "healthcheck"]
       interval: 10s
       timeout: 5s
       retries: 3
     depends_on:
-      - database
-      - init-permissions
+      migrate:
+        condition: service_completed_successfully
 
   database:
     restart: always
-    image: 'postgres:15'
+    image: "postgres:15"
     environment:
-      PGPASSWORD: '${DB_PASSWORD:-secret}'
-      POSTGRES_DB: '${DB_DATABASE:-solidtime}'
-      POSTGRES_USER: '${DB_USERNAME:-postgres}'
-      POSTGRES_PASSWORD: '${DB_PASSWORD:-secret}'
+      POSTGRES_DB: "${DB_DATABASE:-solidtime}"
+      POSTGRES_USER: "${DB_USERNAME:-solidtime}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:-KcgplezS5MkmU/sugg7gMg==}"
     volumes:
-      - 'database-storage:/var/lib/postgresql/data'
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+      - "database-storage:/var/lib/postgresql/data"
     networks:
       - internal
     healthcheck:
       test:
-        - CMD
-        - pg_isready
-        - '-q'
-        - '-d'
-        - '${DB_DATABASE:-solidtime}'
-        - '-U'
-        - 'postgres'
-      retries: 3
+        - CMD-SHELL
+        - pg_isready -q -d "${DB_DATABASE:-solidtime}" -U "${DB_USERNAME:-solidtime}"
+      interval: 5s
+      retries: 10
       timeout: 5s
 
   gotenberg:
     image: gotenberg/gotenberg:8
     networks:
       - internal
-    depends_on:
-      - init-permissions
     healthcheck:
-      test: [ "CMD", "curl", "--silent", "--fail", "http://localhost:3000/health" ]
+      test: ["CMD", "curl", "--silent", "--fail", "http://localhost:3000/health"]
 
 networks:
   internal:
@@ -151,3 +219,4 @@ networks:
 volumes:
   database-storage:
   app-storage:
+
