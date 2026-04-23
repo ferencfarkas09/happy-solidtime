@@ -21,8 +21,29 @@ services:
       - "app-storage:/var/www/html/storage"
     environment:
       CONTAINER_MODE: http
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_KEY: ${APP_KEY:-}
+      APP_URL: ${APP_URL:-http://localhost:8001}
+      DB_CONNECTION: ${DB_CONNECTION:-pgsql}
+      DB_HOST: ${DB_HOST:-database}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_DATABASE: ${DB_DATABASE:-solidtime}
+      DB_USERNAME: ${DB_USERNAME:-solidtime}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      DB_SSLMODE: ${DB_SSLMODE:-disable}
+      QUEUE_CONNECTION: ${QUEUE_CONNECTION:-database}
+      LOG_CHANNEL: ${LOG_CHANNEL:-stderr_daily}
+      FILESYSTEM_DISK: ${FILESYSTEM_DISK:-local}
+      PUBLIC_FILESYSTEM_DISK: ${PUBLIC_FILESYSTEM_DISK:-public}
+      GOTENBERG_URL: ${GOTENBERG_URL:-http://gotenberg:3000}
+    env_file:
+      - laravel.env
     healthcheck:
       test: [ "CMD", "curl", "--fail", "http://localhost:8000/health-check/up" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     depends_on:
       - database
       - init-permissions
@@ -37,8 +58,23 @@ services:
       - "app-storage:/var/www/html/storage"
     environment:
       CONTAINER_MODE: scheduler
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_KEY: ${APP_KEY:-}
+      DB_CONNECTION: ${DB_CONNECTION:-pgsql}
+      DB_HOST: ${DB_HOST:-database}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_DATABASE: ${DB_DATABASE:-solidtime}
+      DB_USERNAME: ${DB_USERNAME:-solidtime}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      DB_SSLMODE: ${DB_SSLMODE:-disable}
+    env_file:
+      - laravel.env
     healthcheck:
       test: [ "CMD", "healthcheck" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     depends_on:
       - database
       - init-permissions
@@ -54,8 +90,23 @@ services:
     environment:
       CONTAINER_MODE: worker
       WORKER_COMMAND: "php /var/www/html/artisan queue:work"
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_KEY: ${APP_KEY:-}
+      DB_CONNECTION: ${DB_CONNECTION:-pgsql}
+      DB_HOST: ${DB_HOST:-database}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_DATABASE: ${DB_DATABASE:-solidtime}
+      DB_USERNAME: ${DB_USERNAME:-solidtime}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      DB_SSLMODE: ${DB_SSLMODE:-disable}
+    env_file:
+      - laravel.env
     healthcheck:
       test: [ "CMD", "healthcheck" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     depends_on:
       - database
       - init-permissions
