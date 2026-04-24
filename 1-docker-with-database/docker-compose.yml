@@ -54,7 +54,7 @@ services:
         set -e
         echo "⏳ Waiting for database..."
         for i in $$(seq 1 60); do
-          if php -r "try { new PDO('pgsql:host=database;port=5432;dbname='.getenv('DB_DATABASE'), getenv('DB_USERNAME'), getenv('DB_PASSWORD')); } catch (Throwable \$e) { exit(1); }" >/dev/null 2>&1; then
+          if php -r "try { new PDO('pgsql:host=database;port=5432;dbname='.getenv('DB_DATABASE'), getenv('DB_USERNAME'), getenv('DB_PASSWORD')); } catch (Throwable $$e) { exit(1); }" >/dev/null 2>&1; then
             echo "✅ Database reachable"; break
           fi
           sleep 2
@@ -66,11 +66,11 @@ services:
         # existing volume, seeds are skipped so we don't duplicate data.
         IS_FRESH=$$(php -r "
           try {
-            \$pdo = new PDO('pgsql:host=database;port=5432;dbname='.getenv('DB_DATABASE'), getenv('DB_USERNAME'), getenv('DB_PASSWORD'));
-            \$stmt = \$pdo->query(\"SELECT to_regclass('public.migrations')\");
-            \$row = \$stmt->fetch();
-            echo (\$row[0] === null) ? 'yes' : 'no';
-          } catch (Throwable \$e) { echo 'yes'; }
+            $$pdo = new PDO('pgsql:host=database;port=5432;dbname='.getenv('DB_DATABASE'), getenv('DB_USERNAME'), getenv('DB_PASSWORD'));
+            $$stmt = $$pdo->query("SELECT to_regclass('public.migrations')");
+            $$row = $$stmt->fetch();
+            echo ($$row[0] === null) ? 'yes' : 'no';
+          } catch (Throwable $$e) { echo 'yes'; }
         ")
         echo "🔎 Fresh database: $$IS_FRESH"
 
